@@ -160,3 +160,6 @@ google-services.json
 freeline.py
 freeline/
 freeline_project_description.json
+
+image-data
+saved-model

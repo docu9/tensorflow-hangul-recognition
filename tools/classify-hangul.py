@@ -37,13 +37,15 @@ def classify(args):
     labels = io.open(args.label_file,
                      'r', encoding='utf-8').read().splitlines()
 
+    
     if not os.path.isfile(args.image):
-        print('Error: Image %s not found.' % args.image)
-        sys.exit(1)
+        args.image = 'test.jpeg'
+        # print('Error: Image %s not found.' % args.image)
+        # sys.exit(1)
 
     # Load graph and parse file.
-    with tf.gfile.GFile(args.graph_file, "rb") as f:
-        graph_def = tf.GraphDef()
+    with tf.io.gfile.GFile(args.graph_file, "rb") as f:
+        graph_def = tf.compat.v1.GraphDef()
         graph_def.ParseFromString(f.read())
 
     with tf.Graph().as_default() as graph:
@@ -64,7 +66,7 @@ def classify(args):
     sess = tf.InteractiveSession()
     image_array = sess.run(image)
     sess.close()
-    with tf.Session(graph=graph) as graph_sess:
+    with tf.compat.v1.Session(graph=graph) as graph_sess:
         predictions = graph_sess.run(y, feed_dict={x: image_array,
                                                    keep_prob: 1.0})
         prediction = predictions[0]
@@ -82,6 +84,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('image', type=str,
                         help='Image to pass to model for classification.')
+    
     parser.add_argument('--label-file', type=str, dest='label_file',
                         default=DEFAULT_LABEL_FILE,
                         help='File containing newline delimited labels.')

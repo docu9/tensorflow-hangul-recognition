@@ -29,11 +29,11 @@ num_classes = 2350
 
 
 def _parse_function(example):
-    features = tf.parse_single_example(
+    features = tf.io.parse_single_example(
         example,
         features={
-            'image/class/label': tf.FixedLenFeature([], tf.int64),
-            'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
+            'image/class/label': tf.io.FixedLenFeature([], tf.int64),
+            'image/encoded': tf.io.FixedLenFeature([], dtype=tf.string,
                                                 default_value='')
         })
     label = features['image/class/label']
@@ -67,7 +67,7 @@ def export_model(model_output_dir, input_node_names, output_node_name):
         frozen_graph_file, True, ""
     )
 
-    input_graph_def = tf.GraphDef()
+    input_graph_def = tf.compat.v1.GraphDef()
     with tf.gfile.Open(frozen_graph_file, "rb") as f:
         input_graph_def.ParseFromString(f.read())
 
@@ -77,7 +77,7 @@ def export_model(model_output_dir, input_node_names, output_node_name):
 
     optimized_graph_file = os.path.join(model_output_dir,
                                         'optimized_' + MODEL_NAME + '.pb')
-    with tf.gfile.GFile(optimized_graph_file, "wb") as f:
+    with tf.io.gfile.GFile(optimized_graph_file, "wb") as f:
         f.write(output_graph_def.SerializeToString())
 
     print("Inference optimized graph saved at: " + optimized_graph_file)
@@ -118,10 +118,10 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
     print('Processing data...')
 
     tf_record_pattern = os.path.join(tfrecords_dir, '%s-*' % 'train')
-    train_data_files = tf.gfile.Glob(tf_record_pattern)
+    train_data_files = tf.io.gfile.glob(tf_record_pattern)
 
     tf_record_pattern = os.path.join(tfrecords_dir, '%s-*' % 'test')
-    test_data_files = tf.gfile.Glob(tf_record_pattern)
+    test_data_files = tf.io.gfile.glob(tf_record_pattern)
 
     # Create training dataset input pipeline.
     train_dataset = tf.data.TFRecordDataset(train_data_files) \
@@ -134,11 +134,11 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
     # Create the model!
 
     # Placeholder to feed in image data.
-    x = tf.placeholder(tf.float32, [None, IMAGE_WIDTH*IMAGE_HEIGHT],
+    x = tf.compat.v1.placeholder(tf.float32, [None, IMAGE_WIDTH*IMAGE_HEIGHT],
                        name=input_node_name)
     # Placeholder to feed in label data. Labels are represented as one_hot
     # vectors.
-    y_ = tf.placeholder(tf.float32, [None, num_classes])
+    y_ = tf.compat.v1.placeholder(tf.float32, [None, num_classes])
 
     # Reshape the image back into two dimensions so we can perform convolution.
     x_image = tf.reshape(x, [-1, IMAGE_WIDTH, IMAGE_HEIGHT, 1])
@@ -151,7 +151,7 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
     h_conv1 = tf.nn.relu(x_conv1 + b_conv1)
 
     # Max-pooling.
-    h_pool1 = tf.nn.max_pool(h_conv1, ksize=[1, 2, 2, 1],
+    h_pool1 = tf.nn.max_pool2d(h_conv1, ksize=[1, 2, 2, 1],
                              strides=[1, 2, 2, 1], padding='SAME')
 
     # Second convolutional layer. 64 feature maps.
@@ -161,7 +161,7 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
                            padding='SAME')
     h_conv2 = tf.nn.relu(x_conv2 + b_conv2)
 
-    h_pool2 = tf.nn.max_pool(h_conv2, ksize=[1, 2, 2, 1],
+    h_pool2 = tf.nn.max_pool2d(h_conv2, ksize=[1, 2, 2, 1],
                              strides=[1, 2, 2, 1], padding='SAME')
 
     # Third convolutional layer. 128 feature maps.
@@ -171,7 +171,7 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
                            padding='SAME')
     h_conv3 = tf.nn.relu(x_conv3 + b_conv3)
 
-    h_pool3 = tf.nn.max_pool(h_conv3, ksize=[1, 2, 2, 1],
+    h_pool3 = tf.nn.max_pool2d(h_conv3, ksize=[1, 2, 2, 1],
                              strides=[1, 2, 2, 1], padding='SAME')
 
     # Fully connected layer. Here we choose to have 1024 neurons in this layer.
@@ -181,7 +181,7 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
     h_fc1 = tf.nn.relu(tf.matmul(h_pool_flat, W_fc1) + b_fc1)
 
     # Dropout layer. This helps fight overfitting.
-    keep_prob = tf.placeholder(tf.float32, name=keep_prob_node_name)
+    keep_prob = tf.compat.v1.placeholder(tf.float32, name=keep_prob_node_name)
     h_fc1_drop = tf.nn.dropout(h_fc1, rate=1-keep_prob)
 
     # Classification layer.
@@ -204,27 +204,27 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
     # rate of 0.0001 with AdamOptimizer. This utilizes someting
     # called the Adam algorithm, and utilizes adaptive learning rates and
     # momentum to get past saddle points.
-    train_step = tf.train.AdamOptimizer(0.0001).minimize(cross_entropy)
+    train_step = tf.compat.v1.train.AdamOptimizer(0.0001).minimize(cross_entropy)
 
     # Define accuracy.
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     correct_prediction = tf.cast(correct_prediction, tf.float32)
     accuracy = tf.reduce_mean(correct_prediction)
 
-    saver = tf.train.Saver()
+    saver = tf.compat.v1.train.Saver()
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         # Initialize the variables.
-        sess.run(tf.global_variables_initializer())
+        sess.run( tf.compat.v1.global_variables_initializer())
 
         checkpoint_file = os.path.join(model_output_dir, MODEL_NAME + '.chkp')
 
         # Save the graph definition to a file.
-        tf.train.write_graph(sess.graph_def, model_output_dir,
+        tf.io.write_graph(sess.graph_def, model_output_dir,
                              MODEL_NAME + '.pbtxt', True)
 
         try:
-            iterator = train_dataset.make_one_shot_iterator()
+            iterator = tf.compat.v1.data.make_one_shot_iterator(train_dataset) 
             batch = iterator.get_next()
             step = 0
 
@@ -274,7 +274,8 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
         total_preds = 0
 
         try:
-            iterator = test_dataset.make_one_shot_iterator()
+            iterator =  tf.compat.v1.data.make_one_shot_iterator(test_dataset) 
+           
             batch = iterator.get_next()
             while True:
                 test_images, test_labels = sess.run(batch)
