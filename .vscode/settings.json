@@ -1,4 +1,11 @@
 {
     "cmake.configureOnOpen": false,
-    "python.pythonPath": "/Users/user/opt/anaconda3/bin/python"
+    "python.pythonPath": "/home/ubuntu/miniconda3/envs/37/bin/python",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": true,
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "image-data/*/**": true
+      }
 }

@@ -139,7 +139,7 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
     # Placeholder to feed in label data. Labels are represented as one_hot
     # vectors.
     y_ = tf.compat.v1.placeholder(tf.float32, [None, num_classes])
-
+    
     # Reshape the image back into two dimensions so we can perform convolution.
     x_image = tf.reshape(x, [-1, IMAGE_WIDTH, IMAGE_HEIGHT, 1])
 
@@ -212,11 +212,14 @@ def main(label_file, tfrecords_dir, model_output_dir, num_train_epochs):
     accuracy = tf.reduce_mean(correct_prediction)
 
     saver = tf.compat.v1.train.Saver()
-
-    with tf.compat.v1.Session() as sess:
+    # config for cuda
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth=True
+    with tf.compat.v1.Session(config=config) as sess:
         # Initialize the variables.
+        print('Processing data...########################################### ')
         sess.run( tf.compat.v1.global_variables_initializer())
-
+        print('Processing data...########################################### ')
         checkpoint_file = os.path.join(model_output_dir, MODEL_NAME + '.chkp')
 
         # Save the graph definition to a file.
