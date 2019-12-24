@@ -70,6 +70,7 @@ def classify(args):
         predictions = graph_sess.run(y, feed_dict={x: image_array,
                                                    keep_prob: 1.0})
         prediction = predictions[0]
+        print(prediction)
 
     # Get the indices that would sort the array, then only get the indices that
     # correspond to the top 5 predictions.

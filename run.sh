@@ -2,5 +2,5 @@
 docker run --gpus all \
     -v ${PWD}:/data \
     --name tensor \
-    -it  tensorflow/tensorflow:latest-gpu-py3 \
+    -it  docu9/tensorflow:latest-gpu-py3 \
     bash
